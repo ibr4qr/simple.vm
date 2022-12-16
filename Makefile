@@ -36,7 +36,7 @@ embedded: src/embedded.o src/simple-vm.o src/simple-vm-opcodes.o
 #  Remove our compiled machine, and the sample programs.
 #
 clean:
-	@rm simple-vm embedded *.raw src/*.o || true
+	@rm simple-vm embedded **/*.raw src/*.o || true
 
 
 
