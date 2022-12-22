@@ -1,10 +1,14 @@
 use std::fs;
-// use std::path::Path;
 use std::time::SystemTime;
 use std::collections::HashMap;
 use std::env;
 use std::{thread, time};
 
+fn clone(source: &mut HashMap<String, SystemTime>, destination: &mut HashMap<String, SystemTime>) {
+    for (path, value) in source {
+        destination.insert(String::from(path), *value);
+    }
+}
 
 fn trasverse(path: &String, _manager: &mut HashMap<String, SystemTime>) -> std::io::Result<()> {
     for entry in fs::read_dir(path)? {
@@ -33,23 +37,32 @@ fn trasverse(path: &String, _manager: &mut HashMap<String, SystemTime>) -> std::
 
 
 fn collect(last_hash_map: &mut HashMap<String, SystemTime>, new_hash_map: &mut HashMap<String, SystemTime>) {
+    
+    let mut another_one: HashMap<String, SystemTime> = HashMap::new();
+    let mut temporary: HashMap<String, SystemTime> = HashMap::new();
+    clone(last_hash_map, &mut another_one);
+    clone(new_hash_map, &mut temporary);
 
 
-    for (path, system_time) in last_hash_map {
+
+    for path in another_one.keys() {
+
+        let a: Option<&SystemTime> = last_hash_map.get(path);
+        let last_system_time = *(a.expect("something went wrong"));
         // caso 1: presente in newHashMap non presente in lastHashMap (file creato)
         let o: Option<&SystemTime> = new_hash_map.get(path);
         if o.is_none() {
             println!("{path} has been created");
-            new_hash_map.insert(String::from(path), *system_time);
+            new_hash_map.insert(String::from(path), last_system_time);
         } else {
-            let value: SystemTime = *(o.expect("something went wrong"));
+            let new_system_time: SystemTime = *(o.expect("something went wrong"));
             // let a = system_time.duration_since(*value);
-            match system_time.duration_since(value) {
+            match last_system_time.duration_since(new_system_time) {
                 Ok(n) => {
                     let elapsed = n.as_secs();
-                    if elapsed != 0 {
+                    if elapsed > 0 {
                         println!("{} has been modified", path);
-                        new_hash_map.insert(String::from(path), value);
+                        new_hash_map.insert(String::from(path), last_system_time);
                         trigger_event();
                     }
                 },
@@ -57,6 +70,18 @@ fn collect(last_hash_map: &mut HashMap<String, SystemTime>, new_hash_map: &mut H
             }
         }
     }
+
+
+    for path in temporary.keys() {
+        let o = last_hash_map.get(path);
+
+        if o.is_none() {
+            println!("{path} has been removed");
+            new_hash_map.remove(path);
+            // trigger_event();
+        }
+    }    
+
 }
 
 // do something like here
@@ -72,7 +97,7 @@ fn main()  {
     let mut new_hash_map: HashMap<String, SystemTime> = HashMap::new();
 
 
-    let ten_millis = time::Duration::from_millis(300);
+    let ten_millis = time::Duration::from_millis(30);
     // how to use
     println!("Usage: ./watch <entrypoint>");
     println!("<entrypoint> should be a file or directory");
@@ -85,6 +110,7 @@ fn main()  {
     loop {
         trasverse(&base_name, &mut last_hash_map); 
         collect(&mut last_hash_map, &mut new_hash_map);
+        last_hash_map.clear();
         thread::sleep(ten_millis);
     }
 }
