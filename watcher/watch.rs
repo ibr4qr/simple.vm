@@ -3,6 +3,8 @@ use std::time::SystemTime;
 use std::collections::HashMap;
 use std::env;
 use std::{thread, time};
+use std::process::Command;
+
 
 fn clone(source: &mut HashMap<String, SystemTime>, destination: &mut HashMap<String, SystemTime>) {
     for (path, value) in source {
@@ -63,7 +65,7 @@ fn collect(last_hash_map: &mut HashMap<String, SystemTime>, new_hash_map: &mut H
                     if elapsed > 0 {
                         println!("{} has been modified", path);
                         new_hash_map.insert(String::from(path), last_system_time);
-                        trigger_event();
+                        trigger_event(&path);
                     }
                 },
                 Err(_) => panic!("negative"),
@@ -85,8 +87,23 @@ fn collect(last_hash_map: &mut HashMap<String, SystemTime>, new_hash_map: &mut H
 }
 
 // do something like here
-fn trigger_event() {
-    println!("run task");
+fn trigger_event(path: &String) {
+    println!("compiling: {path}");
+    let output = Command::new("./compiler").arg(String::from(path))
+                .output()
+                .expect("ls command failed to start");
+
+    if true {
+        println!("running virtual machine");
+        let rawFile = String::from("./examples/add.raw");
+
+
+        Command::new("./simple-vm").arg(rawFile)
+                .spawn()
+                .expect("ls command failed to start");
+    } else {
+        println!("somethign went wrong while compiling");
+    }
 }
 
 
