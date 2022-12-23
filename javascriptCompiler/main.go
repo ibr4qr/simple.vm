@@ -5,8 +5,8 @@ import (
     "log"
     "os"
 	"regexp"
+	"container/list"
 )
-
 
 type Position struct {
 	row int
@@ -38,9 +38,11 @@ func getFileContent(path string) string {
 	return string(content)
 }
 
-func parse(content string) {
+func parse(content string) *list.List {
+	tokens := list.New()
+
 	var number = regexp.MustCompile(`^[-+]?\d+$`)
-	var string_pattern = regexp.MustCompile(`\"[a-z]\"`)
+	var string_pattern = regexp.MustCompile(`\"[a-zA-Z]*"`)
 
 	fmt.Println("Parsing file content")
 	counter := 0
@@ -55,6 +57,28 @@ func parse(content string) {
 			continue;
 		}
 
+		if c == '=' {
+			token = string(c);
+			v:= Token {
+				position: Position { row, column },
+				name: "assign",
+				value: token,
+			}
+			tokens.PushBack(v)
+			continue;
+		}
+
+		if c == '>' || c == '<' {
+			token = string(c)
+			v:= Token {
+				position: Position { row, column },
+				name: "compare",
+				value: token,
+			}
+			tokens.PushBack(v)
+			continue;
+		}
+
 		if c == '(' || c == ')' || c == '{' || c == '}' {
 			token = string(c);
 
@@ -63,9 +87,9 @@ func parse(content string) {
 				name: "par",
 				value: token,
 			}
-			fmt.Println(v)
-
-		} else if c == ' ' || c == '(' {
+			// fmt.Println(v)
+			tokens.PushBack(v)
+		} else if c == ' ' || c == '(' || c == ';' {
 			token = content[counter:i];
 			if number.MatchString(token) {
 				v:= Token {
@@ -73,32 +97,32 @@ func parse(content string) {
 					name: "number",
 					value: token,
 				}
-				fmt.Println(v)
+				tokens.PushBack(v)
+				// fmt.Println(v)
 			} else if string_pattern.MatchString(token) {
 				v:= Token {
 					position: Position { row, column },
 					name: "stringLiteral",
 					value: token,
 				}
-				fmt.Println(v)
+				// fmt.Println(v)
+				tokens.PushBack(v)
 			} else {
 				v:= Token {
 					position: Position { row, column },
 					name: "keyword",
 					value: token,
 				}
-				fmt.Println(v)
+				// fmt.Println(v)
+				tokens.PushBack(v)
 			}
-
-
-
 			counter = i;
 		} 
 		column++;
 	}
-}
 
-
+	return tokens
+}	
 
 func main() {
 	fmt.Println("### JavaScript Compiler to perl InBytecode ###")
@@ -112,6 +136,9 @@ func main() {
     pathname := argsWithProg[1]
 
     fileContent := getFileContent(pathname)
-	parse(fileContent)
-	// fmt.Println(fileContent)
+	tokens := parse(fileContent)
+
+	for e := tokens.Front(); e != nil; e = e.Next() {
+		fmt.Println(e.Value)
+	}
 }
