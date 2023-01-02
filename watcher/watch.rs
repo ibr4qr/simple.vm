@@ -87,6 +87,13 @@ fn collect(last_hash_map: &mut HashMap<String, SystemTime>, new_hash_map: &mut H
 }
 
 // do something like here
+// TODO: should pass a trigger function for any event emitted.
+/*
+    possible events:
+    1. created a file
+    2. removed a file
+    3. changed a file
+*/
 fn trigger_event(path: &String) {
     println!("compiling: {path}");
     let output = Command::new("./compiler").arg(String::from(path))
@@ -95,6 +102,10 @@ fn trigger_event(path: &String) {
 
     if true {
         println!("running virtual machine");
+        
+        // we are hardcoding the name of the file to execute
+        // we need only the the filename without the prefix
+       
         let rawFile = String::from("./examples/add.raw");
 
 
